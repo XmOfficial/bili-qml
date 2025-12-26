@@ -44,86 +44,68 @@ app.get('/', (req, res) => {
     res.send('<h1>B站问号榜服务器已启动 ❓</h1><p>已连接至云数据库。</p>');
 });
 
-// 处理投票
-app.post('/vote', async (req, res) => {
-    const { bvid, title, userId } = req.body;
-    if (!bvid || !userId) {
-        return res.status(400).json({ success: false, message: 'Missing bvid or userId' });
-    }
-
-    let data = await getDB();
+// 统一路由处理函数
+app.all('*', async (req, res) => {
+    const path = req.path.replace(/^\/api/, ''); // 移除可能的 /api 前缀
     
-    // 如果该视频还没记录，初始化它
-    if (!data[bvid]) {
-        data[bvid] = { title, votes: {} };
-    }
-
-    let active = false;
-    if (data[bvid].votes[userId]) {
-        // 如果该用户已投过票，则删除（取消点亮）
-        delete data[bvid].votes[userId];
-        active = false;
-    } else {
-        // 如果没投过，则添加（点亮）
-        data[bvid].votes[userId] = Date.now();
-        active = true;
-    }
-
-    await setDB(data);
-    res.json({ success: true, active });
-});
-
-// 获取状态
-app.get('/status', async (req, res) => {
-    const { bvid, userId } = req.query;
-    const data = await getDB();
-    
-    const videoData = data[bvid] || { votes: {} };
-    const isVoted = videoData.votes[userId];
-    const totalCount = Object.keys(videoData.votes).length;
-
-    res.json({ success: true, active: !!isVoted, count: totalCount });
-});
-
-// 获取排行榜
-app.get('/leaderboard', async (req, res) => {
-    const range = req.query.range || 'daily';
-    const data = await getDB();
-    
-    let startTime;
-    if (range === 'daily') {
-        startTime = moment().startOf('day').valueOf();
-    } else if (range === 'weekly') {
-        startTime = moment().startOf('week').valueOf();
-    } else if (range === 'monthly') {
-        startTime = moment().startOf('month').valueOf();
-    } else {
-        startTime = 0;
-    }
-
-    const list = [];
-
-    // 遍历每个视频
-    for (const bvid in data) {
-        const video = data[bvid];
-        // 过滤出在时间范围内的投票
-        const validVotesCount = Object.values(video.votes).filter(ts => ts >= startTime).length;
-        
-        if (validVotesCount > 0) {
-            list.push({
-                bvid: bvid,
-                title: video.title,
-                count: validVotesCount
-            });
+    // 处理投票
+    if (path === '/vote' && req.method === 'POST') {
+        const { bvid, title, userId } = req.body;
+        if (!bvid || !userId) {
+            return res.status(400).json({ success: false, message: 'Missing bvid or userId' });
         }
+
+        let data = await getDB();
+        if (!data[bvid]) data[bvid] = { title, votes: {} };
+
+        let active = false;
+        if (data[bvid].votes[userId]) {
+            delete data[bvid].votes[userId];
+            active = false;
+        } else {
+            data[bvid].votes[userId] = Date.now();
+            active = true;
+        }
+
+        await setDB(data);
+        return res.json({ success: true, active });
     }
 
-    // 排序并取前 10
-    const sortedList = list
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
+    // 处理状态获取
+    if (path === '/status' && req.method === 'GET') {
+        const { bvid, userId } = req.query;
+        const data = await getDB();
+        const videoData = data[bvid] || { votes: {} };
+        const isVoted = videoData.votes[userId];
+        const totalCount = Object.keys(videoData.votes).length;
+        return res.json({ success: true, active: !!isVoted, count: totalCount });
+    }
 
-    res.json({ success: true, list: sortedList });
+    // 处理排行榜
+    if (path === '/leaderboard' && req.method === 'GET') {
+        const range = req.query.range || 'daily';
+        const data = await getDB();
+        
+        let startTime = 0;
+        if (range === 'daily') startTime = moment().startOf('day').valueOf();
+        else if (range === 'weekly') startTime = moment().startOf('week').valueOf();
+        else if (range === 'monthly') startTime = moment().startOf('month').valueOf();
+
+        const list = [];
+        for (const bvid in data) {
+            const video = data[bvid];
+            const validVotesCount = Object.values(video.votes).filter(ts => ts >= startTime).length;
+            if (validVotesCount > 0) {
+                list.push({ bvid, title: video.title, count: validVotesCount });
+            }
+        }
+
+        const sortedList = list.sort((a, b) => b.count - a.count).slice(0, 10);
+        return res.json({ success: true, list: sortedList });
+    }
+
+    // 如果都没匹配到
+    res.status(404).send(`Cannot ${req.method} ${req.path}`);
 });
 
 // app.listen(PORT, () => {

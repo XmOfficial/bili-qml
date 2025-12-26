@@ -204,48 +204,43 @@ async function getCachedUserId() {
 
 const debouncedInject = debounce(injectQuestionButton, 500);
 
-// 使用 MutationObserver 监听 DOM 变化
-const observer = new MutationObserver((mutations) => {
-    // 只要有节点变动就尝试注入，debounce 会处理频率
-    debouncedInject();
-});
+// 降低监听频率和范围，保护 B 站顶栏
+const observer = new MutationObserver(debounce(() => {
+    injectQuestionButton();
+}, 1000)); // 进一步放慢频率
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
-
-// 监听视频状态，视频播放/暂停时都尝试注入
-function listenVideoEvents() {
-    const video = document.querySelector('video');
-    if (video) {
-        video.removeEventListener('play', injectQuestionButton);
-        video.removeEventListener('pause', injectQuestionButton);
-        video.addEventListener('play', injectQuestionButton);
-        video.addEventListener('pause', injectQuestionButton);
-    }
-}
-
-// 监听 URL 变化
 let lastUrl = location.href;
-setInterval(() => {
-    listenVideoEvents(); // 持续确保监听了视频标签
-    
-    if (location.href !== lastUrl) {
-        lastUrl = location.href;
-        injectQuestionButton(); 
-    } else {
-        // 心跳检测：强制检查
-        const btn = document.getElementById('bili-qmr-btn');
-        const toolbar = document.querySelector('.video-toolbar-left') || 
-                        document.querySelector('.toolbar-left') ||
-                        document.querySelector('.video-toolbar-container .left-operations');
-        
-        if (toolbar && (!btn || !toolbar.contains(btn))) {
-            injectQuestionButton();
-        }
-    }
-}, 500);
 
-// 初始尝试
-injectQuestionButton();
+// 初始尝试 - 增加延迟，等 B 站顶栏加载完再动
+setTimeout(() => {
+    const mainApp = document.getElementById('app') || document.body;
+    observer.observe(mainApp, { childList: true, subtree: true });
+    injectQuestionButton();
+    
+    // 合并后的心跳检测
+    setInterval(() => {
+        const urlChanged = location.href !== lastUrl;
+        if (urlChanged) {
+            lastUrl = location.href;
+            injectQuestionButton();
+        } else {
+            // 心跳检测：强制检查
+            const btn = document.getElementById('bili-qmr-btn');
+            const toolbar = document.querySelector('.video-toolbar-left') || 
+                            document.querySelector('.toolbar-left') ||
+                            document.querySelector('.video-toolbar-container .left-operations');
+            
+            if (toolbar && (!btn || !toolbar.contains(btn))) {
+                injectQuestionButton();
+            }
+        }
+        
+        // 检查视频事件绑定
+        const video = document.querySelector('video');
+        if (video && !video.dataset.qmrListen) {
+            video.dataset.qmrListen = 'true';
+            video.addEventListener('play', () => setTimeout(injectQuestionButton, 500));
+            video.addEventListener('pause', () => setTimeout(injectQuestionButton, 500));
+        }
+    }, 2000); // 心跳频率也降低
+}, 2500); // 延迟 2.5 秒启动，避开顶栏渲染高峰期

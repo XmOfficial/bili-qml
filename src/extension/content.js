@@ -1,4 +1,5 @@
 // content.js
+const API_BASE = 'https://bili-qml.vercel.app/api';
 
 // 获取或生成模拟用户 ID
 async function getUserId() {
@@ -56,7 +57,7 @@ async function syncButtonState() {
     const userId = await getUserId();
     
     try {
-        const statusRes = await fetch(`https://bili-qml.vercel.app/status?bvid=${bvid}&userId=${userId}`);
+        const statusRes = await fetch(`${API_BASE}/status?bvid=${bvid}&userId=${userId}`);
         const statusData = await statusRes.json();
         
         // 更新按钮激活状态
@@ -144,7 +145,7 @@ async function injectQuestionButton() {
 
         try {
             qBtn.style.pointerEvents = 'none';
-            const response = await fetch('https://bili-qml.vercel.app/vote', {
+            const response = await fetch(`${API_BASE}/vote`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

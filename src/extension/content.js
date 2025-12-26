@@ -102,25 +102,30 @@ async function injectQuestionButton() {
         const bvid = getBvid();
         if (!bvid) return;
 
-        // 1. 寻找参考位置（仅作为定位参考，不插入）
-        const toolbar = document.querySelector('.video-toolbar-left') || 
-                        document.querySelector('.toolbar-left') ||
-                        document.querySelector('.video-toolbar-container .left-operations') ||
-                        document.querySelector('#arc_toolbar_report .left-operations') ||
-                        document.querySelector('.ops');
+        // 1. 寻找精准参考位置：分享按钮或包含“复制链接”的区域
+        let anchor = document.querySelector('.video-share') || 
+                     document.querySelector('.share-info') ||
+                     document.querySelector('.video-toolbar-share') ||
+                     document.querySelector('.video-toolbar-left-item.share');
 
-        if (!toolbar) return;
+        // 如果没找到具体的分享按钮，再退而求其次找左侧工具栏
+        if (!anchor) {
+            anchor = document.querySelector('.video-toolbar-left') || 
+                     document.querySelector('.toolbar-left') ||
+                     document.querySelector('.video-toolbar-container .left-operations');
+        }
+
+        if (!anchor) return;
 
         let qBtn = document.getElementById('bili-qmr-btn');
         
-        // 2. 如果按钮不存在，创建并挂载到 body（隔离环境）
+        // 2. 如果按钮不存在，创建并挂载
         if (!qBtn) {
             if (isInjecting) return;
             isInjecting = true;
             
             qBtn = document.createElement('div');
             qBtn.id = 'bili-qmr-btn';
-            // 基础样式，确保按钮悬浮且不干扰 DOM
             qBtn.style.cssText = `
                 position: absolute;
                 z-index: 10000;
@@ -129,11 +134,12 @@ async function injectQuestionButton() {
                 align-items: center;
                 transition: opacity 0.3s;
                 pointer-events: auto;
+                white-space: nowrap;
             `;
             qBtn.innerHTML = `
-                <div class="qmr-icon-wrap">
-                    <span class="qmr-icon">?</span>
-                    <span class="qmr-text">...</span>
+                <div class="qmr-icon-wrap" style="display: flex; align-items: center; color: #61666d;">
+                    <span class="qmr-icon" style="font-size: 18px; margin-right: 4px;">?</span>
+                    <span class="qmr-text" style="font-size: 13px;">...</span>
                 </div>
             `;
             document.body.appendChild(qBtn);
@@ -147,29 +153,31 @@ async function injectQuestionButton() {
                 if (!activeBvid) return;
                 try {
                     qBtn.style.pointerEvents = 'none';
+                    qBtn.style.opacity = '0.5';
                     const response = await fetch(`${API_BASE}/vote`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ bvid: activeBvid, title, userId })
                     });
                     if ((await response.json()).success) syncButtonState();
-                } catch (err) {} finally { qBtn.style.pointerEvents = 'auto'; }
+                } catch (err) {} finally { 
+                    qBtn.style.pointerEvents = 'auto'; 
+                    qBtn.style.opacity = '1';
+                }
             };
             isInjecting = false;
         }
 
-        // 3. 实时计算位置并覆盖（核心修复：不改变 B 站 DOM 结构）
-        const rect = toolbar.getBoundingClientRect();
+        // 3. 实时计算位置：放在锚点的右侧 15px 处
+        const rect = anchor.getBoundingClientRect();
         const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
-        // 将按钮定位在工具栏左侧（prepend 的视觉效果）
-        qBtn.style.left = `${rect.left + scrollLeft}px`; 
+        // 定位在锚点元素的右边
+        qBtn.style.left = `${rect.right + scrollLeft + 15}px`; 
         qBtn.style.top = `${rect.top + scrollTop}px`;
         qBtn.style.height = `${rect.height}px`;
         
-        // 为了不遮挡原本的按钮，给 toolbar 加个 padding 或者让按钮浮在稍微偏移的位置
-        // 这里我们选择让按钮浮动，并微调位置
         if (bvid !== currentBvid) syncButtonState();
     } catch (e) {
         isInjecting = false;

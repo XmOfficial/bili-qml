@@ -133,7 +133,8 @@ async function syncButtonState() {
         
         console.log(`[B站问号榜] 状态同步 | BVID: ${bvid} | UserID: ${userId} | 已点亮: ${statusData.active}`);
         
-        if (statusData.active) {
+        const isLoggedIn = document.cookie.includes('DedeUserID');
+        if (statusData.active && isLoggedIn) {
             qBtn.classList.add('voted');
         } else {
             qBtn.classList.remove('voted');
@@ -203,13 +204,21 @@ async function injectQuestionButton() {
             `;
             document.body.appendChild(qBtn);
             
-            const userId = await getUserId();
             qBtn.onclick = async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // 只有登录用户才能投票
+                if (!document.cookie.includes('DedeUserID')) {
+                    alert('请先登录 B 站后再投问号哦 ~');
+                    return;
+                }
+
                 const activeBvid = getBvid(); 
                 const title = document.querySelector('.video-title')?.innerText || document.title;
                 if (!activeBvid) return;
+
+                const userId = await getUserId();
                 try {
                     qBtn.style.pointerEvents = 'none';
                     qBtn.style.opacity = '0.5';

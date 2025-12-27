@@ -1,8 +1,16 @@
-# B站问号榜 (Bilibili Q-Mark List) ❓
+<p align="center">
+  <img src="src/extension/icons/icon128.png" width="100" height="100" alt="Bilibili Q-Mark List Logo">
+</p>
 
-[中文](README.md) | [English](#english-version)
+<h1 align="center">B站问号榜 (Bilibili Question-Mark Leaderboard) ❓</h1>
 
-> 统计视频的问号值，自动同步弹幕，打造B站抽象视频排行榜。
+<p align="center">
+  <a href="README.md">中文</a> | <a href="#english-version">English</a>
+</p>
+
+<p align="center">
+  <strong>统计视频的问号值，自动同步弹幕，打造Bilibili的抽象视频排行榜。</strong>
+</p>
 
 ---
 

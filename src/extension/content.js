@@ -74,27 +74,13 @@ style.innerHTML = `
 `;
 document.head.appendChild(style);
 
-// 获取或生成模拟用户 ID
-async function getUserId() {
-    return new Promise((resolve) => {
-        try {
-            chrome.storage.local.get(['userId'], (result) => {
-                let userId = result.userId;
-                if (!userId) {
-                    userId = 'user_' + Math.random().toString(36).substr(2, 9);
-                    chrome.storage.local.set({ userId }, () => {
-                        console.log('[B站问号榜] 已生成新用户ID:', userId);
-                        resolve(userId);
-                    });
-                } else {
-                    resolve(userId);
-                }
-            });
-        } catch (e) {
-            console.error('[B站问号榜] 存储访问失败，使用临时ID', e);
-            resolve('temp_' + Date.now());
-        }
-    });
+// 获取用户 ID (直接绑定 B 站 DedeUserID)
+function getUserId() {
+    const match = document.cookie.match(/DedeUserID=([^;]+)/);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return null; // 未登录返回 null
 }
 
 // 获取当前视频的 BVID
@@ -119,6 +105,7 @@ function getBvid() {
 let isInjecting = false;
 let isSyncing = false; // 新增：正在同步状态的锁
 let currentBvid = ''; // 记录当前页面正在处理的 BVID
+let lastSyncedUserId = null;
 
 // 同步按钮状态（亮或灭）及计数
 async function syncButtonState() {
@@ -132,14 +119,17 @@ async function syncButtonState() {
     
     try {
         isSyncing = true;
-        const userId = await getUserId();
+        const userId = getUserId();
         // 增加 _t 参数防止浏览器缓存 GET 请求
-        const statusRes = await fetch(`${API_BASE}/status?bvid=${bvid}&userId=${userId}&_t=${Date.now()}`);
+        const statusRes = await fetch(`${API_BASE}/status?bvid=${bvid}&userId=${userId || ''}&_t=${Date.now()}`);
         const statusData = await statusRes.json();
         
         console.log(`[B站问号榜] 状态同步 | BVID: ${bvid} | UserID: ${userId} | 已点亮: ${statusData.active}`);
         
-        const isLoggedIn = document.cookie.includes('DedeUserID');
+        currentBvid = bvid;
+        lastSyncedUserId = userId;
+        
+        const isLoggedIn = !!userId;
         if (statusData.active && isLoggedIn) {
             qBtn.classList.add('voted');
         } else {
@@ -154,8 +144,6 @@ async function syncButtonState() {
                 countText.innerText = newText;
             }
         }
-
-        currentBvid = bvid;
     } catch (e) {
         console.error('[B站问号榜] 同步状态失败:', e);
     } finally {
@@ -198,81 +186,38 @@ function sendDanmaku(text) {
     try {
         const dmInput = document.querySelector('input.bpx-player-dm-input');
         const dmSendBtn = document.querySelector('.bpx-player-dm-btn-send');
+        if (!dmInput || !dmSendBtn) return;
 
-        if (!dmInput) {
-            console.error('[B站问号榜] ❌ 失败：找不到输入框 input.bpx-player-dm-input');
-            showNotice('找不到弹幕输入框，请确认弹幕开关已打开', true);
-            return;
-        }
-        if (!dmSendBtn) {
-            console.error('[B站问号榜] ❌ 失败：找不到发送按钮 .bpx-player-dm-btn-send');
-            showNotice('找不到发送按钮', true);
-            return;
-        }
-
-        console.log('[B站问号榜] ✅ 找到元素，准备填入内容...');
+        // 1. 填入内容并让 React 感知
         dmInput.focus();
-        dmInput.click();
-        
-        // 执行插入
-        const insertSuccess = document.execCommand('insertText', false, text);
-        console.log('[B站问号榜] 执行 insertText 结果:', insertSuccess);
-        
+        document.execCommand('insertText', false, text);
         dmInput.dispatchEvent(new Event('input', { bubbles: true }));
-        console.log('[B站问号榜] 当前输入框值:', dmInput.value);
 
-        if (dmInput.value !== text) {
-            console.warn('[B站问号榜] ⚠️ 警告：输入框内容未改变，React 状态可能被拦截');
-        }
-
+        // 2. 增加一个适中的延时（150ms），避开 B 站的频率检测和 React 渲染冲突
         setTimeout(() => {
-            console.log('[B站问号榜] 正在模拟按下回车键...');
-            const enterEvent = new KeyboardEvent('keydown', {
-                bubbles: true, cancelable: true, key: 'Enter', keyCode: 13
+            // 3. 模拟按键和点击
+            const events = ['keydown', 'keyup']; // 移除冗余的 keypress
+            events.forEach(type => {
+                dmInput.dispatchEvent(new KeyboardEvent(type, {
+                    bubbles: true, cancelable: true, key: 'Enter', keyCode: 13
+                }));
             });
-            dmInput.dispatchEvent(enterEvent);
 
+            dmSendBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+            dmSendBtn.click();
+
+            // 4. 发送后稍微等一下再失焦，确保 B 站逻辑执行完
             setTimeout(() => {
-                // 检查内容是否消失（消失代表发送成功）
-                if (dmInput.value === '') {
-                    console.log('%c[B站问号榜] 🎉 发送成功！(输入框已清空)', 'color: #52c41a; font-weight: bold;');
-                    showNotice('弹幕“？”同步发送成功！');
-                } else {
-                    console.log('[B站问号榜] 尝试手动点击发送按钮补刀...');
-                    
-                    // 深度模拟点击：先触发 mousedown，再触发 click
-                    dmSendBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                    dmSendBtn.click();
-                    
-                    setTimeout(() => {
-                        if (dmInput.value === '') {
-                            console.log('%c[B站问号榜] 🎉 发送成功！(手动点击生效)', 'color: #52c41a; font-weight: bold;');
-                            showNotice('弹幕“？”同步发送成功！');
-                        } else {
-                            // 如果还是没发出去，尝试最后的大招：直接在输入框按一下回车键的 keyup
-                            const upEvent = new KeyboardEvent('keyup', {
-                                bubbles: true, cancelable: true, key: 'Enter', keyCode: 13
-                            });
-                            dmInput.dispatchEvent(upEvent);
-                            
-                            setTimeout(() => {
-                                if (dmInput.value === '') {
-                                    showNotice('弹幕“？”同步发送成功！');
-                                } else {
-                                    console.error('[B站问号榜] ❌ 最终发送失败：内容仍残留在输入框');
-                                    showNotice('弹幕发送失败，请手动检查弹幕栏', true);
-                                }
-                            }, 200);
-                        }
-                    }, 500);
-                }
                 dmInput.blur();
-            }, 500);
-        }, 300);
+                // 如果还有残留，最后补一刀
+                if (dmInput.value !== '') {
+                    dmSendBtn.click();
+                }
+            }, 100);
+        }, 150); 
 
     } catch (e) {
-        console.error('[B站问号榜] 💥 程序运行崩溃:', e);
-        showNotice('程序运行异常: ' + e.message, true);
+        console.error('[B站问号榜] 弹幕瞬发失败:', e);
     }
 }
 
@@ -330,7 +275,12 @@ async function injectQuestionButton() {
                 const title = document.querySelector('.video-title')?.innerText || document.title;
                 if (!activeBvid) return;
 
-                const userId = await getUserId();
+                const userId = getUserId();
+                if (!userId) {
+                    alert('无法获取用户信息，请确认已登录');
+                    return;
+                }
+
                 try {
                     qBtn.style.pointerEvents = 'none';
                     qBtn.style.opacity = '0.5';
@@ -370,7 +320,10 @@ async function injectQuestionButton() {
         qBtn.style.top = `${rect.top + scrollTop}px`;
         qBtn.style.height = `${rect.height}px`;
         
-        if (bvid !== currentBvid) syncButtonState();
+        const currentUserId = getUserId();
+        if (bvid !== currentBvid || currentUserId !== lastSyncedUserId) {
+            syncButtonState();
+        }
     } catch (e) {
         isInjecting = false;
     }
@@ -389,11 +342,8 @@ function debounce(fn, delay) {
     }
 }
 
-let userIdCache = null;
-async function getCachedUserId() {
-    if (userIdCache) return userIdCache;
-    userIdCache = await getUserId();
-    return userIdCache;
+function getCachedUserId() {
+    return getUserId();
 }
 
 const debouncedInject = debounce(injectQuestionButton, 500);

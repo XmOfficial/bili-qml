@@ -73,6 +73,9 @@ app.get('/', (req, res) => {
     res.send('<h1>B站问号榜服务器已启动 ❓</h1><p>已连接至云数据库。</p>');
 });
 
+// 处理浏览器自动请求 favicon 的问题，防止 404 报错
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // 处理投票
 app.post(['/api/vote', '/vote'], async (req, res) => {
     try {

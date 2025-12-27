@@ -16,9 +16,9 @@
 
 ## 🌟 功能特性
 
--   **问号点亮**：在 B 站视频工具栏增加专属“问号”按钮。
--   **弹幕联动**：点亮问号时，自动在当前视频发送一条“？”弹幕，实现站内外互动。
--   **实时榜单**：点击插件图标，即可查看今日、本周及历史最“抽象”的视频排行。
+-   **问号点亮**：在 B 站视频工具栏增加专属“问号”按钮，如果你觉得这个视频值得你发一个“？”，那么就点亮它。
+-   **弹幕联动**：点亮问号时，自动在当前视频发送一条内容为“？”的弹幕。
+-   **实时榜单**：点击插件图标，即可查看今日、本周及本月最“抽象”的视频排行。
 
 ---
 
@@ -34,11 +34,7 @@
 
 ### 方法2. 自行部署后端 
 
-本项目后端采用 Node.js + Redis，支持一键部署至 Vercel：
-
-1.  在 [Upstash](https://upstash.com/) 创建免费 Redis 实例。
-2.  在 Vercel 中导入 `src/server` 目录。
-3.  配置环境变量：`UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`。
+本项目后端采用 Node.js + Redis，可部署至 Vercel
 
 ---
 
@@ -72,7 +68,11 @@ A browser extension that adds a "Question Mark" button to Bilibili video toolbar
 
 ## 🤝 贡献与反馈
 
-欢迎提交 Issue 或 Pull Request！如果你喜欢这个项目，请给个 ⭐ **Star** 鼓励一下我！OwO~
+欢迎提交 Issue 或 Pull Request！
+
+本人并非计算机专业出身，写点代码只是业余爱好，技术能力和投入时间都远远不够。欢迎所有大佬共建！
+
+如果你喜欢这个项目，请给个 ⭐ **Star** 鼓励一下我！OwO~
 
 ---
 

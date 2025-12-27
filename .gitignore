@@ -21,8 +21,7 @@ Thumbs.db
 
 # 其他项目文件
 
-src/bili-qml.crx
+release/
+src/extension.crx
+src/extension.pem
 src/bili-qml.pem
-src/bili-qml-1.0.zip
-src/bili-video.html
-src/bili-video_files/*

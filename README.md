@@ -38,6 +38,15 @@
 
 ---
 
+## TODO
+
+- [ ] debug-1: 修改下滑时图标未合理隐藏的问题
+- [ ] support-1: 上架Chrome应用商店
+- [ ] support-2: 支持 Firefox
+- [ ] support-3: 支持Bilibili桌面端
+
+---
+
 <a name="english-version"></a>
 
 ## 🌟 English Version
@@ -58,6 +67,7 @@ A browser extension that adds a "Question Mark" button to Bilibili video toolbar
 4.  Click **Load unpacked** and select the `src/extension` folder.
 
 ---
+
 
 ## 🛠 技术栈
 

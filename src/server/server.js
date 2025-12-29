@@ -76,6 +76,30 @@ app.get('/', (req, res) => {
 // 处理浏览器自动请求 favicon 的问题，防止 404 报错
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
+// 处理 robots.txt，告诉爬虫哪些可以爬
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send("User-agent: *\nDisallow: /api/\nDisallow: /vote\nAllow: /");
+});
+
+// 处理常见的恶意扫描路径，直接返回 404，防止产生大量警告日志
+const scannerPaths = [
+    '/wp-admin',
+    '/wordpress',
+    '/.env',
+    '/.git',
+    '/phpmyadmin',
+    '/xmlrpc.php',
+    '/setup-config.php'
+];
+
+app.use((req, res, next) => {
+    if (scannerPaths.some(p => req.path.toLowerCase().includes(p.toLowerCase()))) {
+        return res.status(404).end();
+    }
+    next();
+});
+
 // 处理投票
 app.post(['/api/vote', '/vote'], async (req, res) => {
     try {

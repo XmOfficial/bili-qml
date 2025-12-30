@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const leaderboard = document.getElementById('leaderboard');
     const tabs = document.querySelectorAll('.tab-btn');
 
-    async function fetchLeaderboard(range = 'daily') {
+    async function fetchLeaderboard(range = 'realtime') {
         leaderboard.innerHTML = '<div class="loading">加载中...</div>';
         try {
             const response = await fetch(`${API_BASE}/leaderboard?range=${range}`);

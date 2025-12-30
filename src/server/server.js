@@ -146,18 +146,32 @@ app.get(['/api/status', '/status'], async (req, res) => {
 
 // 获取排行榜
 app.get(['/api/leaderboard', '/leaderboard'], async (req, res) => {
-    const range = req.query.range || 'daily';
+    const range = req.query.range || 'realtime';
     const data = await getDB();
     
     let startTime = 0;
-    if (range === 'daily') startTime = moment().startOf('day').valueOf();
-    else if (range === 'weekly') startTime = moment().startOf('week').valueOf();
-    else if (range === 'monthly') startTime = moment().startOf('month').valueOf();
+    let endTime = Date.now();
+
+    if (range === 'realtime') {
+        // 实时榜：今天零点至今
+        startTime = moment().startOf('day').valueOf();
+    } else if (range === 'daily') {
+        // 日榜：昨天零点到昨天 23:59:59
+        startTime = moment().subtract(1, 'days').startOf('day').valueOf();
+        endTime = moment().subtract(1, 'days').endOf('day').valueOf();
+    } else if (range === 'weekly') {
+        // 周榜：本周一零点至今
+        startTime = moment().startOf('isoWeek').valueOf(); // 使用 isoWeek 确保从周一开始
+    } else if (range === 'monthly') {
+        // 月榜：本月1号零点至今
+        startTime = moment().startOf('month').valueOf();
+    }
 
     const list = [];
     for (const bvid in data) {
         const video = data[bvid];
-        const validVotesCount = Object.values(video.votes).filter(ts => ts >= startTime).length;
+        // 过滤在指定时间范围内的投票
+        const validVotesCount = Object.values(video.votes).filter(ts => ts >= startTime && ts <= endTime).length;
         if (validVotesCount > 0) {
             list.push({ bvid, title: video.title, count: validVotesCount });
         }

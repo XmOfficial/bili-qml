@@ -11,16 +11,13 @@ style.innerHTML = `
         width: 92px;
         height: 28px;
         white-space: nowrap;
+        transition: all .3s;
         font-size: 13px;
-        color: #61666d;
+        color: #61666d; /* 对应 var(--text2) */
         font-weight: 500;
         cursor: pointer;
         user-select: none;
-        transition: color .3s, opacity .3s;
-        /* 关键：相对于父容器定位，不占位 */
-        left: 100%; 
-        margin-left: 12px;
-        top: 0;
+        z-index: 10000;
     }
     #bili-qmr-btn .qmr-icon-wrap {
         display: flex;
@@ -228,17 +225,17 @@ async function injectQuestionButton() {
         const bvid = getBvid();
         if (!bvid) return;
 
-        // 1. 寻找精准参考位置：锁定转发按钮 (share)
-        let anchor = document.querySelector('.video-toolbar-left-item.share') || 
-                     document.querySelector('.video-share') || 
-                     document.querySelector('.share-info');
+        // 1. 寻找精准参考位置：分享按钮或包含“复制链接”的区域
+        let anchor = document.querySelector('.video-share') || 
+                     document.querySelector('.share-info') ||
+                     document.querySelector('.video-toolbar-share') ||
+                     document.querySelector('.video-toolbar-left-item.share');
 
-        // 如果找不到分享按钮，再找左侧工具栏容器
-        const toolbarLeft = document.querySelector('.video-toolbar-left') || 
-                           document.querySelector('.toolbar-left');
-
-        if (!anchor && toolbarLeft) {
-            anchor = toolbarLeft.lastElementChild;
+        // 如果没找到具体的分享按钮，再退而求其次找左侧工具栏
+        if (!anchor) {
+            anchor = document.querySelector('.video-toolbar-left') || 
+                     document.querySelector('.toolbar-left') ||
+                     document.querySelector('.video-toolbar-container .left-operations');
         }
 
         if (!anchor) return;
@@ -252,6 +249,7 @@ async function injectQuestionButton() {
             
             qBtn = document.createElement('div');
             qBtn.id = 'bili-qmr-btn';
+            // 移除 style.cssText 中的 position 等，改为由 CSS 控制
             qBtn.style.pointerEvents = 'auto';
             const iconUrl = chrome.runtime.getURL('icons/button-icon.png');
             qBtn.innerHTML = `
@@ -260,10 +258,7 @@ async function injectQuestionButton() {
                     <span class="qmr-text">...</span>
                 </div>
             `;
-            
-            // 关键：将父元素设为相对定位，作为我们的定位基准
-            anchor.style.position = 'relative';
-            anchor.appendChild(qBtn);
+            document.body.appendChild(qBtn);
             
             qBtn.onclick = async (e) => {
                 e.preventDefault();
@@ -314,7 +309,16 @@ async function injectQuestionButton() {
             isInjecting = false;
         }
 
-        // 3. 状态同步检查
+        // 3. 实时计算位置：放在锚点的右侧 15px 处
+        const rect = anchor.getBoundingClientRect();
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // 定位在锚点元素的右边
+        qBtn.style.left = `${rect.right + scrollLeft + 15}px`; 
+        qBtn.style.top = `${rect.top + scrollTop}px`;
+        qBtn.style.height = `${rect.height}px`;
+        
         const currentUserId = getUserId();
         if (bvid !== currentBvid || currentUserId !== lastSyncedUserId) {
             syncButtonState();

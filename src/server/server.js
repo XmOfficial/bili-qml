@@ -149,22 +149,25 @@ app.get(['/api/leaderboard', '/leaderboard'], async (req, res) => {
     const range = req.query.range || 'realtime';
     const data = await getDB();
     
+    // 关键修复：强制使用北京时间 (UTC+8)
+    const now = () => moment().utcOffset(8);
+    
     let startTime = 0;
-    let endTime = Date.now();
+    let endTime = now().valueOf();
 
     if (range === 'realtime') {
         // 实时榜：今天零点至今
-        startTime = moment().startOf('day').valueOf();
+        startTime = now().startOf('day').valueOf();
     } else if (range === 'daily') {
         // 日榜：昨天零点到昨天 23:59:59
-        startTime = moment().subtract(1, 'days').startOf('day').valueOf();
-        endTime = moment().subtract(1, 'days').endOf('day').valueOf();
+        startTime = now().subtract(1, 'days').startOf('day').valueOf();
+        endTime = now().subtract(1, 'days').endOf('day').valueOf();
     } else if (range === 'weekly') {
         // 周榜：本周一零点至今
-        startTime = moment().startOf('isoWeek').valueOf(); // 使用 isoWeek 确保从周一开始
+        startTime = now().startOf('isoWeek').valueOf(); 
     } else if (range === 'monthly') {
         // 月榜：本月1号零点至今
-        startTime = moment().startOf('month').valueOf();
+        startTime = now().startOf('month').valueOf();
     }
 
     const list = [];

@@ -54,7 +54,7 @@ app.use(bodyParser.json());
 const securityCheck = (req, res, next) => {
     const userAgent = req.headers['user-agent'] || '';
 
-    // 1. 拦截自动化工具 (开源安全型：不依赖秘密令牌)
+    // 1. 拦截自动化工具
     const ua = userAgent.toLowerCase();
     const botKeywords = ['curl', 'python', 'httpclient', 'axios', 'node-fetch', 'go-http', 'wget', 'postman'];
     if (botKeywords.some(kw => ua.includes(kw))) {
@@ -69,7 +69,6 @@ const securityCheck = (req, res, next) => {
         if (title) {
             const forbidden = /服务器|入侵|hack|attack|admin|system|database|root/i;
             if (forbidden.test(title)) {
-                // 发现敏感词，不报错，但悄悄把标题改掉，让攻击者“白费力气”
                 req.body.title = "未知视频 (已拦截违规内容)";
             } else {
                 // 限制长度，防止数据库压力

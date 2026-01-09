@@ -49,7 +49,7 @@ app.use(cors({
         /^chrome-extension:\/\/.+$/,
         /^moz-extension:\/\/.+$/
     ],
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST'], 
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(bodyParser.json());

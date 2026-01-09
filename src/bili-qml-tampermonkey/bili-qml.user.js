@@ -292,8 +292,10 @@
             const isLoggedIn = !!userId;
             if (statusData.active && isLoggedIn) {
                 qBtn.classList.add('voted');
+                document.getElementById('bili-qmr-btn-inner').classList.add('on');
             } else {
                 qBtn.classList.remove('voted');
+                document.getElementById('bili-qmr-btn-inner').classList.remove('on');
             }
 
             const countText = qBtn.querySelector('.qmr-text');

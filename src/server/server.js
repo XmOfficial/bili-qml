@@ -44,7 +44,7 @@ async function setDB(data) {
 }
 
 app.use(cors({
-    origin: ['https://www.bilibili.com', 'chrome-extension://*'],
+    origin: ['https://www.bilibili.com', /^chrome-extension:\/\/.+$/],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

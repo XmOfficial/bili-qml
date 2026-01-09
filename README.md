@@ -81,6 +81,12 @@ A browser extension that adds a "Question Mark" button to Bilibili video toolbar
 
 ## 🤝 贡献与反馈
 
+感谢以下大佬对本项目做出的贡献
+
+| 贡献者 | 贡献说明 |
+| :---: | :--- |
+| <a href="https://github.com/VanceHud"><img src="https://github.com/VanceHud.png?size=50" width="50px;"/><br /><sub><b>VanceHud</b></sub></a> | 贡献v1.2数据库迁移脚本，eo保护 |
+
 欢迎提交 Issues 或 Pull Request！
 
 本人并非计算机专业出身，写点代码只是业余爱好，技术能力和投入时间都有待提升。欢迎各位技术大佬共建！

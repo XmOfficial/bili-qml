@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchLeaderboard(range = 'realtime') {
         leaderboard.innerHTML = '<div class="loading">加载中...</div>';
         try {
-            const response = await fetch(`${API_BASE}/leaderboard?range=${range}`);
+            const response = await fetch(`${API_BASE}/leaderboard?range=${range}&type=2`);
             const data = await response.json();
             await Promise.all(data.list.map(async (item, index) => {
             try {

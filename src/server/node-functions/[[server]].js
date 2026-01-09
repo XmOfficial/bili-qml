@@ -186,12 +186,12 @@ app.get(['/api/status', '/status'], async (req, res) => {
 // 获取排行榜
 app.get(['/api/leaderboard', '/leaderboard'], async (req, res) => {
     const { range = 'realtime', type } = req.query;
-    type = parseInt(type);
+    let proc_type = parseInt(type);
     try {
         const board = await getLeaderBoard(range);
-        const list = board.map((array) => { return { bvid: array[0], count: array[1] } });
+        let list = board.map((array) => { return { bvid: array[0], count: array[1] } });
         // no type or type != 2: add backward capability
-        if (!type || type !== 2) {
+        if (!proc_type || proc_type !== 2) {
             await Promise.all(list.map(async (item, index) => {
                 try {
                     const conn = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${item.bvid}`,
@@ -204,13 +204,13 @@ app.get(['/api/leaderboard', '/leaderboard'], async (req, res) => {
                         });
                     const json = await conn.json();
                     if (json.code === 0 && json.data?.title) {
-                        data.list[index].title = json.data.title;
+                        list[index].title = json.data.title;
                     } else {
-                        data.list[index].title = '未知标题';
+                        list[index].title = '未知标题';
                     }
                 } catch (err) {
                     console.error(`获取标题失败 ${item.bvid}:`, err);
-                    data.list[index].title = '加载失败';
+                    list[index].title = '加载失败';
                 }
             }));
         }

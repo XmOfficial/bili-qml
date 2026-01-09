@@ -49,7 +49,7 @@
 
 - [ ] new feature-1: 频繁vote时增加人机验证，感谢B站用户 巧克力棒好好吃啊qwq 的建议
 - [ ] new feature-2: 将榜单制作为一个独立的页面，方便用户查看和分享 [*on work*]
-- [ ] new feature-3: 由用户决定是否发送？弹幕
+- [x] new feature-3: 由用户决定是否发送？弹幕
 
 ---
 
@@ -81,7 +81,16 @@ A browser extension that adds a "Question Mark" button to Bilibili video toolbar
 
 ## 🤝 贡献与反馈
 
-欢迎提交 Issues 或 Pull Request！
+感谢以下大佬对本项目做出的贡献，每一位都是热心而高技术力的contributor，他们的贡献使得本项目变得更加完善和强大🎉
+
+| 贡献者 | 贡献说明 |
+| :---: | :--- |
+| <a href="https://github.com/Radekyspec"><img src="https://github.com/Radekyspec.png?size=80" width="80px;" style="border-radius: 50%;"/><br /><sub><b>Radekyspec</b></sub></a> | 贡献v1.2数据库迁移脚本，eo保护 |
+| <a href="https://github.com/VanceHud"><img src="https://github.com/VanceHud.png?size=80" width="80px;" style="border-radius: 50%;"/><br /><sub><b>VanceHud</b></sub></a> | 贡献firefox版本、油猴版本、用户自定义是否发送问号功能、人机验证 |
+| <a href="https://github.com/ShiroAzusa64"><img src="https://github.com/ShiroAzusa64.png?size=80" width="80px;" style="border-radius: 50%;"/><br /><sub><b>ShiroAzusa64</b></sub></a> | 贡献v1.2版本后端逻辑 |
+
+
+参与贡献方式： 欢迎提交 Issues 或 Pull Request！
 
 本人并非计算机专业出身，写点代码只是业余爱好，技术能力和投入时间都有待提升。欢迎各位技术大佬共建！
 

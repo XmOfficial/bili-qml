@@ -3,6 +3,122 @@ const API_BASE = 'https://bili-qml.bydfk.com/api';
 // for debug
 //const API_BASE = 'http://localhost:3000/api'
 
+// 存储键名
+const STORAGE_KEY_DANMAKU_PREF = 'danmakuPreference';
+
+// 获取弹幕发送偏好
+// 返回: null (未设置), true (总是发送), false (总是不发送)
+async function getDanmakuPreference() {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get([STORAGE_KEY_DANMAKU_PREF], (result) => {
+            resolve(result[STORAGE_KEY_DANMAKU_PREF] !== undefined ? result[STORAGE_KEY_DANMAKU_PREF] : null);
+        });
+    });
+}
+
+// 设置弹幕发送偏好
+async function setDanmakuPreference(preference) {
+    return new Promise((resolve) => {
+        chrome.storage.sync.set({ [STORAGE_KEY_DANMAKU_PREF]: preference }, () => {
+            resolve();
+        });
+    });
+}
+
+// 显示弹幕发送确认对话框
+function showDanmakuConfirmDialog() {
+    return new Promise((resolve) => {
+        // 创建遮罩层
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 999999;
+            display: flex; align-items: center; justify-content: center;
+        `;
+
+        // 创建对话框
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            background: white; border-radius: 8px; padding: 24px;
+            width: 360px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        `;
+
+        dialog.innerHTML = `
+            <div style="font-size: 18px; font-weight: bold; color: #18191c; margin-bottom: 16px;">
+                发送弹幕确认
+            </div>
+            <div style="font-size: 14px; color: #61666d; margin-bottom: 20px;">
+                点亮问号后是否自动发送"?"弹幕？
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="qmr-dont-ask" style="margin-right: 8px;">
+                    <span style="font-size: 14px; color: #61666d;">不再询问（记住我的选择）</span>
+                </label>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="qmr-btn-no" style="
+                    padding: 8px 20px; border: 1px solid #e3e5e7; border-radius: 4px;
+                    background: white; color: #61666d; cursor: pointer;
+                    font-size: 14px; transition: all 0.2s;
+                ">
+                    不发送
+                </button>
+                <button id="qmr-btn-yes" style="
+                    padding: 8px 20px; border: none; border-radius: 4px;
+                    background: #00aeec; color: white; cursor: pointer;
+                    font-size: 14px; transition: all 0.2s;
+                ">
+                    发送弹幕
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // 按钮悬停效果
+        const btnNo = dialog.querySelector('#qmr-btn-no');
+        const btnYes = dialog.querySelector('#qmr-btn-yes');
+
+        btnNo.addEventListener('mouseenter', () => {
+            btnNo.style.background = '#f4f5f7';
+        });
+        btnNo.addEventListener('mouseleave', () => {
+            btnNo.style.background = 'white';
+        });
+
+        btnYes.addEventListener('mouseenter', () => {
+            btnYes.style.background = '#00a1d6';
+        });
+        btnYes.addEventListener('mouseleave', () => {
+            btnYes.style.background = '#00aeec';
+        });
+
+        // 处理选择
+        const handleChoice = (sendDanmaku) => {
+            const dontAsk = dialog.querySelector('#qmr-dont-ask').checked;
+            overlay.remove();
+            resolve({ sendDanmaku, dontAskAgain: dontAsk });
+        };
+
+        btnNo.addEventListener('click', () => handleChoice(false));
+        btnYes.addEventListener('click', () => handleChoice(true));
+
+        // ESC 键关闭
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                resolve({ sendDanmaku: false, dontAskAgain: false });
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    });
+}
+
 // 注入 B 站风格的 CSS
 // const style = document.createElement('style');
 // style.innerHTML = `
@@ -313,7 +429,22 @@ async function injectQuestionButton() {
                     if (resData.success) {
                         // 只有当点亮（active 为 true）时才发弹幕
                         if (resData.active) {
-                            sendDanmaku('？');
+                            const preference = await getDanmakuPreference();
+
+                            if (preference === null) {
+                                // 首次使用，显示确认对话框
+                                const choice = await showDanmakuConfirmDialog();
+                                if (choice.sendDanmaku) {
+                                    sendDanmaku('？');
+                                }
+                                if (choice.dontAskAgain) {
+                                    await setDanmakuPreference(choice.sendDanmaku);
+                                }
+                            } else if (preference === true) {
+                                // 用户选择了总是发送
+                                sendDanmaku('？');
+                            }
+                            // preference === false 时不发送
                         }
                         await syncButtonState();                        
                     } else {
@@ -326,6 +457,7 @@ async function injectQuestionButton() {
                     qBtn.style.opacity = '1';
                 }
             };
+
             isInjecting = false;
         }
 

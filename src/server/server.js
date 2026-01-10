@@ -46,8 +46,25 @@ async function setDB(data) {
 app.use(cors({
     origin: ['https://www.bilibili.com', /^chrome-extension:\/\/.+$/],
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
+
+// 域名重定向中间件：处理旧域名跳转并保持 CORS 兼容
+app.use((req, res, next) => {
+    const host = req.headers.host;
+    if (host && (host.includes('bili-qml.top'))) {
+        const origin = req.headers.origin;
+        // 如果是跨域请求，手动设置 CORS 头
+        if (origin) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        }
+        return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
+    }
+    next();
+});
+
 app.use(bodyParser.json()); 
 
 // 安全中间件：检查请求头，增加简单的防刷逻辑

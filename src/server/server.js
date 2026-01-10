@@ -48,17 +48,11 @@ app.use((req, res, next) => {
     const origin = req.headers.origin;
     
     // 只要是来自允许范围的 Origin，就强制注入头
-    if (origin && (
-        origin.includes('bilibili.com') || 
-        origin.startsWith('chrome-extension://') || 
-        origin.includes('bili-qml.top') ||
-        origin.includes('bydfk.com')
-    )) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    }
+    // 针对重定向导致的 Origin: null 问题，直接使用 '*' 或动态回显
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
     // 预检请求直接返回 204
     if (req.method === 'OPTIONS') {

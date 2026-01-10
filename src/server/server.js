@@ -43,53 +43,39 @@ async function setDB(data) {
     }
 }
 
-app.use(cors({
-    // origin: ['https://www.bilibili.com', /^chrome-extension:\/\/.+$/],
-    // methods: ['GET', 'POST'],
-    // allowedHeaders: ['Content-Type', 'Authorization'],
-    origin: (origin, callback) => {
-        // 允许来自 B 站、插件以及旧域名的请求
-        if (!origin || 
-            origin.includes('bilibili.com') || 
-            origin.startsWith('chrome-extension://') || 
-            origin.includes('bili-qml.top')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204
-}));
-
-// 增加一个全局中间件，确保所有响应都带上必要的 CORS 头（兜底方案）
+// 1. 手动处理 OPTIONS 预检请求和全局 CORS 头
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    const host = req.headers.host;
-    if (origin) {
+    
+    // 只要是来自允许范围的 Origin，就强制注入头
+    if (origin && (
+        origin.includes('bilibili.com') || 
+        origin.startsWith('chrome-extension://') || 
+        origin.includes('bili-qml.top') ||
+        origin.includes('bydfk.com')
+    )) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
-// // 域名重定向中间件：处理旧域名跳转并保持 CORS 兼容
-// app.use((req, res, next) => {
-//     const host = req.headers.host;
-//     if (host && (host.includes('bili-qml.top'))) {
-//         const origin = req.headers.origin;
-//         // 如果是跨域请求，手动设置 CORS 头
-//         if (origin) {
-//             res.setHeader('Access-Control-Allow-Origin', origin);
-//             res.setHeader('Access-Control-Allow-Credentials', 'true');
-        // }
-     if (host && host.includes('bili-qml.top')) {
+
+    // 预检请求直接返回 204
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+
+    // 2. 处理旧域名重定向
+    const host = req.headers.host;
+    if (host && host.includes('bili-qml.top')) {
+        console.log(`Redirecting ${host}${req.url} to new domain...`);
         return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
     }
+
     next();
 });
 
+// 移除原本的 app.use(cors(...))，改用上面的手动控制以获得最高优先级
 app.use(bodyParser.json()); 
 
 // 安全中间件：检查请求头，增加简单的防刷逻辑

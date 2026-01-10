@@ -51,7 +51,7 @@ app.use((req, res, next) => {
     } else {
         res.setHeader('Access-Control-Allow-Origin', 'https://www.bilibili.com');
     }
-    // 强制设置 CORS 响应头，解决重定向后的 Origin: null 报错
+
     // res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -65,6 +65,9 @@ app.use((req, res, next) => {
     // 处理旧域名重定向
     const host = req.headers.host;
     if (host && host.includes('bili-qml.top')) {
+        // 重定向时也要保持 CORS 头，否则浏览器在重定向后的第一步就会拦截
+        res.setHeader('Access-Control-Allow-Origin', origin || 'https://www.bilibili.com');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
     }
 

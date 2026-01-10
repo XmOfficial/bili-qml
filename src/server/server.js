@@ -61,7 +61,6 @@ app.use(cors({
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-    preflightContinue: false,
     optionsSuccessStatus: 204
 }));
 
@@ -72,11 +71,9 @@ app.use((req, res, next) => {
     if (origin) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
-
-    
-// }));
-
 // // 域名重定向中间件：处理旧域名跳转并保持 CORS 兼容
 // app.use((req, res, next) => {
 //     const host = req.headers.host;

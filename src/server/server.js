@@ -44,11 +44,11 @@ async function setDB(data) {
 }
 
 app.use(cors({
-    origin: ['https://www.bilibili.com', 'chrome-extension://*'],
+    origin: ['https://www.bilibili.com', /^chrome-extension:\/\/.+$/],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(bodyParser.json());
+app.use(bodyParser.json()); 
 
 // 安全中间件：检查请求头，增加简单的防刷逻辑
 const securityCheck = (req, res, next) => {

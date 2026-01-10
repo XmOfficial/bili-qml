@@ -43,13 +43,16 @@ async function setDB(data) {
     }
 }
 
-// 1. 手动处理 OPTIONS 预检请求和全局 CORS 头
+// === 重定向与 CORS 处理开始 ===
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    
-    // 只要是来自允许范围的 Origin，就强制注入头
-    // 针对重定向导致的 Origin: null 问题，直接使用 '*' 或动态回显
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', 'https://www.bilibili.com');
+    }
+    // 强制设置 CORS 响应头，解决重定向后的 Origin: null 报错
+    // res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -59,15 +62,15 @@ app.use((req, res, next) => {
         return res.status(204).end();
     }
 
-    // 2. 处理旧域名重定向
+    // 处理旧域名重定向
     const host = req.headers.host;
     if (host && host.includes('bili-qml.top')) {
-        console.log(`Redirecting ${host}${req.url} to new domain...`);
         return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
     }
 
     next();
 });
+// === 重定向与 CORS 处理结束 ===
 
 // 移除原本的 app.use(cors(...))，改用上面的手动控制以获得最高优先级
 app.use(bodyParser.json()); 

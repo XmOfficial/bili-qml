@@ -84,10 +84,9 @@ app.use((req, res, next) => {
 //             res.setHeader('Access-Control-Allow-Origin', origin);
 //             res.setHeader('Access-Control-Allow-Credentials', 'true');
         // }
-        if (host && host.includes('bili-qml.top')) 
-        {
-            return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
-        }
+     if (host && host.includes('bili-qml.top')) {
+        return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
+    }
     next();
 });
 

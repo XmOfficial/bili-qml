@@ -44,24 +44,53 @@ async function setDB(data) {
 }
 
 app.use(cors({
-    origin: ['https://www.bilibili.com', /^chrome-extension:\/\/.+$/],
-    methods: ['GET', 'POST'],
+    // origin: ['https://www.bilibili.com', /^chrome-extension:\/\/.+$/],
+    // methods: ['GET', 'POST'],
+    // allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: (origin, callback) => {
+        // 允许来自 B 站、插件以及旧域名的请求
+        if (!origin || 
+            origin.includes('bilibili.com') || 
+            origin.startsWith('chrome-extension://') || 
+            origin.includes('bili-qml.top')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 
-// 域名重定向中间件：处理旧域名跳转并保持 CORS 兼容
+// 增加一个全局中间件，确保所有响应都带上必要的 CORS 头（兜底方案）
 app.use((req, res, next) => {
+    const origin = req.headers.origin;
     const host = req.headers.host;
-    if (host && (host.includes('bili-qml.top'))) {
-        const origin = req.headers.origin;
-        // 如果是跨域请求，手动设置 CORS 头
-        if (origin) {
-            res.setHeader('Access-Control-Allow-Origin', origin);
-            res.setHeader('Access-Control-Allow-Credentials', 'true');
-        }
-        return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
+
+    
+// }));
+
+// // 域名重定向中间件：处理旧域名跳转并保持 CORS 兼容
+// app.use((req, res, next) => {
+//     const host = req.headers.host;
+//     if (host && (host.includes('bili-qml.top'))) {
+//         const origin = req.headers.origin;
+//         // 如果是跨域请求，手动设置 CORS 头
+//         if (origin) {
+//             res.setHeader('Access-Control-Allow-Origin', origin);
+//             res.setHeader('Access-Control-Allow-Credentials', 'true');
+        // }
+        if (host && host.includes('bili-qml.top')) 
+        {
+            return res.redirect(308, `https://bili-qml.bydfk.com${req.url}`);
+        }
     next();
 });
 
